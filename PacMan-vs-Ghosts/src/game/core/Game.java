@@ -16,8 +16,6 @@ package game.core;
 import game.controllers.ghosts.GhostsActions;
 import game.controllers.pacman.PacManAction;
 
-import java.util.Random;
-
 /*
  * This interface defines the contract between the game engine and the controllers. It provides all
  * the methods a controller may use to (a) query the game state, (b) compute game-related attributes
@@ -99,13 +97,13 @@ public interface Game
 	public boolean isJunction(int nodeIndex);						//returns true if node is a junction (more than 2 neighbours)
 	public int getNumNeighbours(int nodeIndex);						//returns the number of neighbours of the node specified
 	
-	public enum DM{PATH,EUCLID,MANHATTEN};				 			//simple enumeration for use with the direction methods (below)
+	public enum DM{PATH,EUCLID,MANHATTAN};				 			//simple enumeration for use with the direction methods (below)
 	public int getNextPacManDir(int to,boolean closer,DM measure);	//returns the direction Ms Pac-Man should take to approach/retreat from the node specified, using the distance measure specified
 	public int getNextGhostDir(int whichGhost,int to,boolean closer,DM measure);	//returns the direction the ghost specified should take to approach/retreat from the node specified, using the distance measure specified
 	
 	public int getPathDistance(int from,int to);					//returns the shortest path distance (Dijkstra) from one node to another
 	public double getEuclideanDistance(int from,int to);			//returns the Euclidean distance between two nodes
-	public int getManhattenDistance(int from,int to);				//returns the Manhatten distance between two nodes
+	public int getManhattanDistance(int from,int to);				//returns the Manhattan distance between two nodes
 	
 	public int[] getPossiblePacManDirs(boolean includeReverse);		//returns the set of possible directions for Ms Pac-Man, with or without the direction opposite to the last direction taken
 	public int[] getPossibleGhostDirs(int whichGhost);				//returns the set of possible directions for the ghost specified (excludes the opposite of the previous direction)

@@ -1,7 +1,6 @@
 package cz.cuni.mff.amis.pacman.tournament;
 
 import game.SimulatorConfig;
-import game.controllers.ghosts.game.GameGhosts;
 import game.controllers.pacman.IPacManController;
 
 import java.io.File;
@@ -12,6 +11,8 @@ import com.martiansoftware.jsap.FlaggedOption;
 import com.martiansoftware.jsap.JSAP;
 import com.martiansoftware.jsap.JSAPException;
 import com.martiansoftware.jsap.JSAPResult;
+
+import cz.cuni.mff.amis.pacman.tournament.run.PacManResults;
 
 public class EvaluateAgentConsole {
 	
@@ -144,7 +145,7 @@ public class EvaluateAgentConsole {
 	    FlaggedOption opt32 = new FlaggedOption(ARG_RESULT_DIR_LONG)
 	    	.setStringParser(JSAP.STRING_PARSER)
 	    	.setRequired(false)
-	    	.setDefault("./results")
+	    	.setDefault((String) null)
 	    	.setShortFlag(ARG_RESULT_DIR_SHORT)
 	    	.setLongFlag(ARG_RESULT_DIR_LONG);    
 	    opt32.setHelp("Directory where to output results, will be created if not exist.");
@@ -186,7 +187,9 @@ public class EvaluateAgentConsole {
 		
 		if (!config.success()) {
 			String error = "Invalid arguments specified.";
-			Iterator errorIter = config.getErrorMessageIterator();
+
+			@SuppressWarnings("unchecked")
+			Iterator<String> errorIter = config.getErrorMessageIterator();
 			if (!errorIter.hasNext()) {
 				error += "\n-- No details given.";
 			} else {
@@ -221,20 +224,22 @@ public class EvaluateAgentConsole {
 		System.out.println("-- run count: " + runCount);
 		System.out.println("-- single level repetitions: " + oneLevelRepetitions);
 		
-		resultDirFile = new File(resultDir);
-		System.out.println("-- result dir: " + resultDir + " --> " + resultDirFile.getAbsolutePath());
-		
-		if (!resultDirFile.exists()) {
-			System.out.println("---- result dir does not exist, creating!");
-			resultDirFile.mkdirs();
+		if (resultDir != null) {
+			resultDirFile = new File(resultDir);
+			System.out.println("-- result dir: " + resultDir + " --> " + resultDirFile.getAbsolutePath());
+			
+			if (!resultDirFile.exists()) {
+				System.out.println("---- result dir does not exist, creating!");
+				resultDirFile.mkdirs();
+			}
+			if (!resultDirFile.exists()) {
+				fail("Result dir does not exists. Parsed as: " + resultDir + " --> " + resultDirFile.getAbsolutePath());
+			}
+			if (!resultDirFile.isDirectory()) {
+				fail("Result dir is not a directory. Parsed as: " + resultDir + " --> " + resultDirFile.getAbsolutePath());
+			}
+			System.out.println("---- result directory exists, ok");
 		}
-		if (!resultDirFile.exists()) {
-			fail("Result dir does not exists. Parsed as: " + resultDir + " --> " + resultDirFile.getAbsolutePath());
-		}
-		if (!resultDirFile.isDirectory()) {
-			fail("Result dir is not a directory. Parsed as: " + resultDir + " --> " + resultDirFile.getAbsolutePath());
-		}
-		System.out.println("---- result directory exists, ok");
 		
 		System.out.println("-- resolving agent FQCN: " + agentFQCN);
 		try {
@@ -246,7 +251,7 @@ public class EvaluateAgentConsole {
 			fail("Failed to find agent class: " + agentFQCN);
 		}
 		System.out.println("---- agent class found");
-		Constructor agentCtor = null;
+		Constructor<?> agentCtor = null;
 		try {
 			agentCtor = agentClass.getConstructor();
 		} catch (Exception e) {
@@ -270,33 +275,13 @@ public class EvaluateAgentConsole {
 	    System.out.println("Sanity checks OK!");
 	}
 	
-	private static void evaluateAgent() {
+	private static PacManResults evaluateAgent() {
 		SimulatorConfig config = SimulatorConfig.fromOptions(simulatorOptions);
 		EvaluateAgent evaluate = new EvaluateAgent(seed, config, runCount, oneLevelRepetitions, resultDirFile);
-		evaluate.evaluateAgent(agentId, agentFQCN);		
+		return evaluate.evaluateAgent(agentId, agentFQCN);		
 	}
 		
-	// ==============
-	// TEST ARGUMENTS
-	// ==============
-	public static String[] getTestArgs() {
-		return new String[] {
-				  "-s", "20" // "seed"
-				, "-o", "-pp true -tp 1.0 -gc 4 -lc 20 -v false -2x true -p false -tt 40 -r true"   // prototype-options";
-				, "-c", "50"  // run-count
-				, "-r", "1"  // one-run-repetitions
-				, "-p", "game.controllers.pacman.examples.MyPacMan" // agent-fqcn ... requires MarioAI4J-Agents on classpath!
-				, "-i", "MyPacMan"   // agent-id
-				, "-d", "./results" // result-dir"	
-		};
-	}
-	
-	public static void main(String[] args) throws JSAPException {
-		// -----------
-		// FOR TESTING
-		// -----------
-		args = getTestArgs();		
-		
+  public static PacManResults evaluate(String[] args) throws JSAPException {
 		// --------------
 		// IMPLEMENTATION
 		// --------------
@@ -309,11 +294,16 @@ public class EvaluateAgentConsole {
 	    
 	    sanityChecks();
 	    
-	    evaluateAgent();
-	    
-	    System.out.println("---// FINISHED //---");
-	    
-	    System.exit(0);
+	    return evaluateAgent();
+	}
+
+	public static void main(String[] args) {
+		try {
+	    evaluate(args);
+			System.out.println("---// FINISHED //---");
+		} catch (JSAPException e) {
+			System.err.println(e);
+		}
 	}
 
 }
